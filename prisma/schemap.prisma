@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int          @id @default(autoincrement())
+  email           String
+  password        String
+  activate        Boolean         @default(false)
+  ban             Boolean         @default(false)
+  reqIp           String
+  dataLogin       DateTime        @default(now())
+  googleId        String?
+  datePing        DateTime        @default(now())
+  vkontakteId     String?
+  phoneNumber     String
+  role            Role            @default(user)
+  questionnaireId Questionnaire?
+  tokenId         Token?
+  iin             String
+  avatar          String
+  taskIds         TasksOnUsers[]
+}
+
+model Task {
+  id          Int   @id @default(autoincrement())
+  title       String
+  description String
+  date_start  DateTime @default(now())
+  date_end    DateTime @default(now())
+  fileId      File[]
+  imageId     Image[]
+  userIds     TasksOnUsers[]
+}
+
+model TasksOnUsers {
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  task       Task     @relation(fields: [taskId], references: [id])
+  taskId     Int
+  assignedAt DateTime @default(now())
+  assignedBy String
+
+  @@id([userId, taskId])
+}
+
+model Image {
+  id     Int    @id @default(autoincrement())
+  link   String
+  taskId Int
+  task   Task   @relation(fields: [taskId], references: [id])
+}
+
+model File {
+  id     Int    @id @default(autoincrement())
+  link   String
+  taskId Int
+  task   Task   @relation(fields: [taskId], references: [id])
+}
+
+model Questionnaire {
+  id           Int       @id @default(autoincrement())
+  birthDay     String
+  cityId       City[]
+  street       String
+  flat         String
+  universityId University?
+  collegeId    College?
+  schoolId     School?
+  work         String
+  userId       Int    @unique
+  user         User      @relation(fields: [userId], references: [id])
+}
+
+model Token {
+  id           Int       @id @default(autoincrement())
+  refreshToken String
+  userId       Int    @unique
+  user         User      @relation(fields: [userId], references: [id])
+}
+
+model University {
+  id              Int           @id @default(autoincrement())
+  name            String
+  questionnaireId Int           @unique
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id])
+}
+
+model College {
+  id              Int           @id @default(autoincrement())
+  name            String
+  questionnaireId Int           @unique
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id])
+}
+
+model School {
+  id              Int           @id @default(autoincrement())
+  name            String
+  questionnaireId Int           @unique
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id])
+}
+
+model City {
+  id              Int              @id @default(autoincrement())
+  name            String
+  microdistricts  Microdictrict[]
+  questionnaireId Int
+  questionnaire   Questionnaire    @relation(fields: [questionnaireId], references: [id])
+}
+
+model Microdictrict {
+  id     Int    @id @default(autoincrement())
+  name   String
+  cityId Int
+  city   City   @relation(fields: [cityId], references: [id])
+}
+
+enum Role {
+  user
+  admin
+}
