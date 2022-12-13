@@ -27,8 +27,18 @@ model User {
   tokenId         Token?
   iin             String
   avatar          String?
-  taskIds         String[] @db.ObjectId
-  task            Task[]   @relation(fields: [taskIds], references: [id])
+  commentIds      Comment[]
+  taskIds         String[]  @db.ObjectId
+  task            Task[]    @relation(fields: [taskIds], references: [id])
+}
+
+model Comment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  comment     String
+  userIds     String @db.ObjectId
+  user        User   @relation(fields: [userIds], references: [id])
+  taskId      String @db.ObjectId
+  task        Task   @relation(fields: [taskId], references: [id])
 }
 
 model Task {
@@ -39,6 +49,7 @@ model Task {
   date_end    DateTime @default(now())
   fileId      File[]
   imageId     Image[]
+  commentId   Comment[]
   userIds     String[] @db.ObjectId
   user        User[]   @relation(fields: [userIds], references: [id])
 }

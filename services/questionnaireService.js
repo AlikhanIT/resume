@@ -52,14 +52,16 @@ class QuestionnaireService {
     return result;
   };
 
-  remove = async (id, role) => {
+  remove = async (ids, role) => {
     const questionnaire = await prisma.Questionnaire.findFirst({
       where: {
-        id: id,
+        userId: ids,
       },
     });
 
-    if (questionnaire.id === id || role === "admin") {
+    const id = questionnaire.id;
+
+    if (questionnaire.id === id || role.role === "admin") {
       const city = await prisma.City.findFirst({
         where: {
           questionnaireId: id,
@@ -167,7 +169,7 @@ class QuestionnaireService {
   };
 
   edit = async (
-    id,
+    ids,
     birthDay,
     cityName,
     microdisctrictName,
@@ -181,11 +183,13 @@ class QuestionnaireService {
   ) => {
     const questionnaire = await prisma.Questionnaire.findFirst({
       where: {
-        id: id,
+        userId: ids,
       },
     });
 
-    if (questionnaire || role === "admin") {
+    const id = questionnaire.id;
+
+    if (questionnaire || role.role === "admin") {
       await prisma.City.updateMany({
         where: {
           questionnaireId: id,
@@ -233,7 +237,7 @@ class QuestionnaireService {
           cityId: city.id,
         },
         data: {
-          name: cityName,
+          name: microdisctrictName,
         },
       });
 
@@ -258,22 +262,29 @@ class QuestionnaireService {
   get = async (id, role) => {
     const questionnaire = await prisma.Questionnaire.findFirst({
       where: {
-        id: id,
+        userId: id,
+      },
+      include: {
+        collegeId: true,
+        schoolId: true,
+        universityId: true,
+        cityId: {
+          include: {
+            microdistricts: true,
+          },
+        },
       },
     });
 
-    if (questionnaire || role === "admin") {
-      const result = await prisma.Questionnaire.findFirst({
-        where: { id: id },
-      });
-      return result;
+    if (questionnaire || role.role === "admin") {
+      return questionnaire;
     } else {
       throw apiError.AccessDenied();
     }
   };
 
   getAll = async (role) => {
-    if (role === "admin") {
+    if (role.role === "admin") {
       const result = await prisma.Questionnaire.findMany();
       return result;
     } else {

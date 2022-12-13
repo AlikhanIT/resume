@@ -161,7 +161,6 @@ class UserService {
     if (!refreshToken) {
       throw apiError.UnathorizedError();
     }
-    console.log(refreshToken);
     const userData = tokenService.validateRefreshToken(refreshToken);
     const tokenFromDb = await tokenService.findToken(refreshToken);
     console.log(userData, tokenFromDb);
@@ -172,13 +171,8 @@ class UserService {
     const user = await prisma.User.findFirst({ where: { id: userData.id } });
     const result = new userDto(user);
 
-    const tokens = tokenService.generateTokens({ ...userDto });
+    const tokens = tokenService.generateTokens({ ...result });
     await tokenService.saveToken(result.id, tokens.refreshToken);
-
-    console.log({
-      ...tokens,
-      ...result,
-    });
 
     return {
       ...tokens,
@@ -204,22 +198,21 @@ class UserService {
     }
   };
 
-  edit = async (id, email, password, phoneNumber, iin, avatar, role) => {
+  edit = async (id, email, phoneNumber, iin, avatar, role) => {
     if (id === role.id || role.role === "admin") {
-      const passwordHash = await bcrypt.hash(password, 3);
-
-      const result = await prisma.User.update({
+      const user = await prisma.User.update({
         where: {
           id: id,
         },
         data: {
           email,
-          password: passwordHash,
           phoneNumber,
           iin,
           avatar,
         },
       });
+
+      const result = new userDto(user);
 
       return result;
     } else {
@@ -229,7 +222,7 @@ class UserService {
 
   get = async (id, role) => {
     if (id === role.id || role === "admin") {
-      const result = await prisma.User.findUnique({
+      const user = await prisma.User.findUnique({
         where: {
           id: id,
         },
@@ -241,6 +234,7 @@ class UserService {
           },
         },
       });
+      const result = new userDto(user);
       return { ...result, taskIds };
     } else {
       throw apiError.AccessDenied();
@@ -248,7 +242,7 @@ class UserService {
   };
 
   getAll = async (role) => {
-    if (role === "admin") {
+    if (role.role === "admin") {
       const result = await prisma.User.findMany({
         include: { questionnaireId: true },
       });

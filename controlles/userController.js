@@ -1,4 +1,5 @@
 const userService = require("../services/userService");
+const questionnaireService = require("../services/questionnaireService");
 const apiError = require("../errors/apiError");
 
 class UserController {
@@ -22,6 +23,19 @@ class UserController {
         phoneNumber,
         iin,
         avatar
+      );
+
+      await questionnaireService.create(
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        result.id
       );
 
       res.cookie("refreshToken", result.refreshToken, {
@@ -79,9 +93,8 @@ class UserController {
   refresh = async (req, res, next) => {
     try {
       const { refreshToken } = req.cookies;
-      console.log(refreshToken);
       const result = await userService.refresh(refreshToken.split(" ")[0]);
-
+      console.log("result", result);
       res.cookie("refreshToken", result.refreshToken, {
         maxAge: 14 * 24 * 60 * 60 * 1000,
         httpOnly: true,
@@ -107,17 +120,16 @@ class UserController {
     try {
       const { id } = req.params;
       const role = req.user;
-      const { email, password, phoneNumber, iin, avatar } = req.body;
+      const { email, phoneNumber, iin, avatar } = req.body;
       const result = await userService.edit(
         id,
         email,
-        password,
         phoneNumber,
         iin,
         avatar,
         role
       );
-      res.status(201).json(result);
+      res.status(201).json({ ...result });
     } catch (e) {
       next(e);
     }

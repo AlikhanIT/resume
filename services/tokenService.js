@@ -63,11 +63,12 @@ class tokenService {
   };
 
   removeToken = async (id) => {
-    const tokenData = await prisma.Token.delete({
+    const tokenData = await prisma.Token.deleteMany({
       where: {
         userId: id,
       },
     });
+    console.log(tokenData);
 
     if (!tokenData) {
       return null;

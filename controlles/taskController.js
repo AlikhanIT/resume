@@ -4,12 +4,12 @@ const apiError = require("../errors/apiError");
 class TaskController {
   create = async (req, res, next) => {
     try {
-      const { title, description, date_end, fileId, imageId, userIds } =
+      const { title, description, dateEnd, fileId, imageId, userIds } =
         req.body;
       const result = await taskService.create(
         title,
         description,
-        date_end,
+        dateEnd,
         fileId,
         imageId,
         userIds
@@ -36,13 +36,13 @@ class TaskController {
     try {
       const { id } = req.params;
       const role = req.user;
-      const { title, description, date_end, fileId, imageId, userIds } =
+      const { title, description, dateEnd, fileId, imageId, userIds } =
         req.body;
       const result = await taskService.edit(
         id,
         title,
         description,
-        date_end,
+        dateEnd,
         fileId,
         imageId,
         userIds,
@@ -69,6 +69,16 @@ class TaskController {
     try {
       const role = req.user;
       const result = await taskService.getAll(role);
+      res.status(201).json(result);
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  getMyTasks = async (req, res, next) => {
+    try {
+      const role = req.user;
+      const result = await taskService.getMyTasks(role);
       res.status(201).json(result);
     } catch (e) {
       next(e);

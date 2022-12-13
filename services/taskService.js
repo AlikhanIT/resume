@@ -3,13 +3,17 @@ const apiError = require("../errors/apiError");
 
 class TaskService {
   create = async (title, description, date_end, fileId, imageId, userIds) => {
+    const iLink = imageId.map((item) => {
+      return { link: item };
+    });
+
     const result = await prisma.Task.create({
       data: {
         title,
         description,
-        date_end: new Date(),
+        date_end: new Date(date_end),
         fileId: { create: { link: fileId } },
-        imageId: { create: { link: imageId } },
+        imageId: { createMany: { data: iLink } },
         userIds,
       },
     });
@@ -24,7 +28,7 @@ class TaskService {
       },
     });
 
-    if (task || role === "admin") {
+    if (task || role.role === "admin") {
       await prisma.Image.deleteMany({
         where: {
           taskId: id,
@@ -32,6 +36,12 @@ class TaskService {
       });
 
       await prisma.File.deleteMany({
+        where: {
+          taskId: id,
+        },
+      });
+
+      await prisma.Comment.deleteMany({
         where: {
           taskId: id,
         },
@@ -76,6 +86,12 @@ class TaskService {
       },
     });
 
+    await prisma.Comment.deleteMany({
+      where: {
+        taskId: id,
+      },
+    });
+
     const result = await prisma.Task.deleteMany({
       where: {
         id: id,
@@ -101,20 +117,42 @@ class TaskService {
       },
     });
 
-    if (task || role === "admin") {
-      const result = await prisma.Task.update({
-        where: {
-          id: id,
-        },
-        data: {
-          title,
-          description,
-          date_end: new Date(),
-          fileId: { create: { link: fileId } },
-          imageId: { create: { link: imageId } },
-          userIds,
-        },
-      });
+    const iLink = imageId
+      ? imageId.map((item) => {
+          return { link: item };
+        })
+      : "";
+
+    if (task || role.role === "admin") {
+      let result = {};
+      if (imageId.length === 0) {
+        result = await prisma.Task.update({
+          where: {
+            id: id,
+          },
+          data: {
+            title,
+            description,
+            date_end: new Date(date_end),
+            fileId: { create: { link: fileId } },
+            userIds,
+          },
+        });
+      } else {
+        result = await prisma.Task.update({
+          where: {
+            id: id,
+          },
+          data: {
+            title,
+            description,
+            date_end: new Date(date_end),
+            fileId: { create: { link: fileId } },
+            imageId: { createMany: { data: iLink } },
+            userIds,
+          },
+        });
+      }
 
       return result;
     } else {
@@ -129,8 +167,25 @@ class TaskService {
       },
     });
 
-    if (task || role === "admin") {
-      const result = await prisma.Task.findFirst({ where: { id: id } });
+    if (task || role.role === "admin") {
+      const result = await prisma.Task.findFirst({
+        where: { id: id },
+        include: {
+          fileId: true,
+          imageId: true,
+          commentId: {
+            include: {
+              user: {
+                select: {
+                  email: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+          user: { select: { email: true, id: true } },
+        },
+      });
       return result;
     } else {
       throw apiError.AccessDenied();
@@ -138,8 +193,37 @@ class TaskService {
   };
 
   getAll = async (role) => {
-    if (role === "admin") {
-      const result = await prisma.Task.findMany({});
+    if (role.role === "admin") {
+      const result = await prisma.Task.findMany({
+        include: {
+          imageId: true,
+          user: {
+            select: {
+              avatar: true,
+              email: true,
+            },
+          },
+        },
+      });
+      return result;
+    } else {
+      throw apiError.AccessDenied();
+    }
+  };
+
+  getMyTasks = async (role) => {
+    console.log("role", role.id);
+    if (role.role) {
+      const result = await prisma.Task.findMany({
+        where: {
+          userIds: {
+            has: "637b3cff36a96a04536914c0",
+          },
+        },
+        include: {
+          imageId: true,
+        },
+      });
       return result;
     } else {
       throw apiError.AccessDenied();
